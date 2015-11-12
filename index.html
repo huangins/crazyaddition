@@ -1,0 +1,259 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>極限加法測試</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://github.hubspot.com/odometer/themes/odometer-theme-default.css" />
+    <script src="http://github.hubspot.com/odometer/odometer.js"></script>
+
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+</head>
+<body>
+    <div id="fb-root"></div>
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : '465154360317972',
+          xfbml      : true,
+          version    : 'v2.3'
+        });
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-63902930-1', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    <div class="modal fade" id="startModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">測試開始</h4>
+                </div>
+                <div class="modal-body">
+                    <p>在時限內盡可能答對最多題吧！倒數的時間會越來越短喔！</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="start();">開始</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    <div class="row">
+        <div class="col-xs-1 col-md-2 col-lg-3"></div>
+        <div class="col-xs-10 col-md-8 col-lg-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">極限加法測試</h3>
+            </div>
+            <div class="panel-body">
+                <div>倒數時間 : <span id="countdown">5</span>秒, 失誤 : <span id="missed">0</span>/3, 分數 : <span id="points">0</span>/100</div>
+                <div id="question">
+                    <div class="pie degree">
+                        <span class="block"></span>
+                        <span id="time">5.0</span>
+                    </div>
+                    <span id="num-a">?</span> + <span id="num-b">?</span> = <form id="answer-form"><input input type="number" id="guess"></form>
+                    <button class="btn btn-warning" onclick="validator();">驗證</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-1 col-md-2 col-lg-3"></div>
+    </div>
+    <div class="modal fade" id="endModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">測試結束</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="summary">你的分數：<span id="final-points">0</span>/100</div>
+                    <div>
+                        <span id="comment"></span>
+                        <span class="fb-share-button" data-href="http://crazyaddition.appspot.com" data-layout="button"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    
+                    <button type="button" class="btn btn-primary" onclick="restart();">重新開始</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+</body>
+<script type="text/javascript">
+    var points = 0;
+    var lives = 3;
+    var missed = 0;
+    var totaltime = 5.0;
+    var current = 0.0;
+    var problemNum = 0;
+    var myCounter;
+    var highComment = "你的分數已經超越一般人了！想要向大家炫耀嗎？";
+    var lowComment = "繼續加油！想要讓大家知道你的分數嗎？";
+    $("#answer-form").submit(validator);
+
+    $('#startModal').modal({
+        backdrop: 'static',
+        show: true,
+        keyboard: false
+    })
+    $('#endModal').modal({
+        backdrop: 'static',
+        show: false,
+        keyboard: false
+    })
+    sendGaEvent('page', 'show', 'start', '');
+    var el = document.querySelector('#final-points');
+
+    od = new Odometer({
+        el: el,
+        value: 0,
+
+        // Any option (other than auto and selector) can be passed in here
+        format: '(,ddd)',
+        theme: 'default'
+    });
+    function updateInfo() {
+        $("#missed").empty().append(missed.toString());
+        $("#points").empty().append(points.toString());
+        $("#countdown").empty().append(totaltime.toString());
+    }
+    function gameOver() {
+        sendGaEvent('page', 'show', 'gameOver', '');
+        $('#endModal').modal('show');
+        setTimeout("od.update("+points.toString()+");", 500);
+        if (points > 60) {
+            $('#comment').empty().append(highComment);
+        }
+        else {
+            $('#comment').empty().append(lowComment);
+        }
+    }
+    function increaseMissed() {
+        missed += 1;
+        if (lives === missed) {
+            gameOver();
+        }
+    }
+    function sendGaEvent(category, action, label, value) {
+        try{
+            ga('send', 'event', category, action, label, value);
+        }
+        catch(err){
+            console.warn('Sending GA event failure, with error... ' + err);
+            console.warn('If you are in dev mode, its fine.')
+        }
+    }
+    function validator() {
+        sendGaEvent('button', 'click', 'validate', problemNum);
+
+        var guess = document.getElementById("guess").value;
+        if (guess === "") {
+            return false;
+        }
+        if (checkAnswer(parseInt(guess))) {
+            points += 2;
+        }
+        else {
+            increaseMissed();
+        }
+        generateQuestion();
+        return false;
+    }
+    function generateQuestion() {
+        if(myCounter) {
+            clearInterval(myCounter);
+        }
+        if (points === 100) {
+            gameOver();
+            return;
+        }
+        problemNum += 1;
+        if(problemNum % 5 == 0 && totaltime > 0.5) {
+            totaltime -= 0.5;
+        }
+        updateInfo();
+        if (lives > missed) {
+            document.getElementById("guess").value = "";
+            var a = Math.floor(Math.random()*10);
+            var b = Math.floor(Math.random()*10);
+            window.checkAnswer = function(guess) {return guess === a+b;};
+            $("#num-a").empty().append(a.toString());
+            $("#num-b").empty().append(b.toString());
+
+            if(!/iphone|ipod|ipad/i.test(navigator.userAgent)) // check if is ipad device
+            {
+                $("#guess").focus();
+            }
+
+            current = 0.0;
+            myCounter = setInterval(function () {
+                current += 0.1;
+
+                if(current >= totaltime) {
+                    clearInterval(myCounter);
+                    current = 0;
+                    increaseMissed();
+                    generateQuestion();
+                }
+                else {
+                    $('#time').html((totaltime - current).toFixed(1));
+                    update(parseFloat(current.toFixed(1)));
+                }
+            }, 100);
+        }
+    }
+    function initTest() {
+        points = 0;
+        lives = 3;
+        missed = 0;
+        totaltime = 5;
+        problemNum = 0;
+        $('#startModal').modal('hide');
+        $('#endModal').modal('hide');
+
+        generateQuestion();
+    }
+    function start() {
+        sendGaEvent('button', 'click', 'start', '');
+        initTest();
+    }
+    function restart() {
+        sendGaEvent('button', 'click', 'restart', '');
+        initTest();
+    }
+    function update(percent){
+        var deg;
+        if(percent < (totaltime*0.5)){
+            deg = 90.0 + (360.0*percent/totaltime);
+            $('.pie').css('background-image',
+                          'linear-gradient('+deg+'deg, transparent 50%, white 50%),linear-gradient(90deg, white 50%, transparent 50%)');
+        }
+        else if (percent >= (totaltime*0.5)){
+            deg = -90.0 + (360.0*percent/totaltime);
+            $('.pie').css('background-image',
+                          'linear-gradient('+deg+'deg, transparent 50%, #1fbba6 50%),linear-gradient(90deg, white 50%, transparent 50%)');
+            }
+    }
+</script>
+</html>
